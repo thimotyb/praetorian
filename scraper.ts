@@ -228,6 +228,10 @@ async function sendNotification(newPublications: Publication[], config: Config):
     },
   });
 
+  const testRecipient = (process.env.PRAETORIAN_TEST_RECIPIENT || '').trim();
+  const recipients = testRecipient ? [testRecipient] : config.emails;
+  const toHeader = recipients.join(', ');
+
   const publicationsHtml = newPublications.map(p => `
     <div style="border-bottom: 1px solid #ddd; padding: 15px 0;">
       <p><strong>Oggetto:</strong> ${p.subject}</p>
@@ -242,7 +246,7 @@ async function sendNotification(newPublications: Publication[], config: Config):
 
   const mailOptions = {
     from: `"Praetorian" <${process.env.SMTP_USER}>`,
-    to: config.emails.join(', '),
+    to: toHeader,
     subject: 'Praetorian: Nuovi atti pubblicati sull\'Albo Pretorio',
     html: `
       <div style="font-family: sans-serif; color: #333;">
@@ -259,7 +263,12 @@ async function sendNotification(newPublications: Publication[], config: Config):
   };
 
   await transporter.sendMail(mailOptions);
-  console.log(`Email notification sent to: ${config.emails.join(', ')}`);
+  const logRecipients = testRecipient ? `${testRecipient} (test override)` : toHeader;
+  if (testRecipient) {
+    console.log(`Email notification sent in test mode to: ${logRecipients}`);
+  } else {
+    console.log(`Email notification sent to: ${logRecipients}`);
+  }
 }
 
 

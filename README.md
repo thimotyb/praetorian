@@ -16,7 +16,13 @@ npm install
     ```bash
     cp .env.example .env
     ```
-    You will need SMTP credentials to send emails.
+    You will need SMTP credentials to send emails. For Gmail:
+
+    - Abilita l'autenticazione a due fattori sul tuo account Google.
+    - Visita <https://myaccount.google.com/apppasswords>, scegli "Mail" come app e "Altro" oppure "Dispositivo per la scrittura di app" come dispositivo.
+    - Genera una password a 16 caratteri e incollala in `SMTP_PASS` (e, se vuoi, in `APP_PASSWORD`).
+
+    Durante i test puoi impostare `PRAETORIAN_TEST_RECIPIENT` in `.env` per forzare l'invio verso una sola casella (ad esempio `thimoty@thimoty.it`).
 
 2.  **Keywords & Emails**: The `config.json` file contains the keywords to search for and the email recipients. You can edit this file directly if needed.
 
