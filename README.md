@@ -40,7 +40,7 @@ For automatic daily execution, you can either:
 -   Or schedule it locally on Windows (WSL2) using Task Scheduler:
 
     1.  Ensure the repository contains `run-praetorian.sh` (wrapper script). Make it executable: `chmod +x run-praetorian.sh`.
-    2.  Open **Task Scheduler** → *Create Basic Task* → name it (e.g., "Praetorian Daily").
+    2.  Open **Task Scheduler** → *Create Basic Task* → name it (e.g., "Praetorian").
     3.  Trigger: **Daily** at your preferred time.
     4.  Action: **Start a program** with:
         - Program/script: `C:\Windows\System32\wsl.exe`

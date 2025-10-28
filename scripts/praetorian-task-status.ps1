@@ -1,4 +1,4 @@
-$taskName = "Praetorian Daily"
+$taskName = "Praetorian"
 $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 if (-not $task) {
     Write-Output "Scheduled task '$taskName' was not found."
