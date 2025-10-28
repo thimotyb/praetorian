@@ -28,6 +28,14 @@ const SEARCH_PAGE_URL = `${BASE_URL}ur1ME002.sto?DB_NAME=l200130&w3c=1`;
 const CONFIG_PATH = path.join(__dirname, 'config.json');
 const SEEN_PUBS_PATH = path.join(__dirname, 'seen_publications.json');
 
+const SIGN_OFFS = [
+  'Semper vigilans.',
+  'Praetorianus civitatem servat.',
+  'Custos urbis numquam dormit.',
+  'Ad honorem et gloriam Praetoriani.',
+  'Praesidium civium fideliter.',
+];
+
 // --- MAIN LOGIC ---
 
 /**
@@ -203,6 +211,8 @@ async function sendNotification(newPublications: Publication[], config: Config):
     </div>
   `).join('');
 
+  const signOff = SIGN_OFFS[Math.floor(Math.random() * SIGN_OFFS.length)];
+
   const mailOptions = {
     from: `"Praetorian" <${process.env.SMTP_USER}>`,
     to: config.emails.join(', '),
@@ -212,7 +222,7 @@ async function sendNotification(newPublications: Publication[], config: Config):
         <h2>Ave, sono Praetorian, e sorveglio la mia città.</h2>
         <p>Sono stati trovati ${newPublications.length} nuovi atti di potenziale interesse:</p>
         ${publicationsHtml}
-        <p style="margin-top: 20px; font-style: italic;">Semper vigilans.</p>
+        <p style="margin-top: 20px; font-style: italic;">${signOff}</p>
       </div>
     `,
   };
