@@ -291,14 +291,14 @@ async function sendNotification(newPublications: Publication[], config: Config):
     subject: 'Praetorian: Nuovi atti pubblicati sull\'Albo Pretorio',
     html: `
       <div style="font-family: sans-serif; color: #333;">
-        <h2>Ave, sono Praetorian ${PRAETORIAN_VERSION}, e sorveglio la mia città.</h2>
-        <p style="margin-top: 4px; color: #666; font-size: 14px;">Versione ${PRAETORIAN_VERSION} · Guardia Pretoriana digitale al servizio del quartiere.</p>
+        <h2>Ave, sono Praetorian, e sorveglio la mia città.</h2>
         <p>Sono stati trovati ${newPublications.length} nuovi atti di potenziale interesse:</p>
         ${publicationsHtml}
         <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 12px; font-style: italic; color: #2c3e50;">
           <img src="${PRAETORIAN_IMAGE_DATA_URI}" alt="Stylised Praetorian guard" width="48" height="48" style="display: block; border-radius: 8px; box-shadow: 0 0 4px rgba(0,0,0,0.15);" />
           <span>${signOff}</span>
         </div>
+        <p style="margin-top: 12px; font-size: 12px; color: #666; text-align: center;">Praetorian ${PRAETORIAN_VERSION} · Guardia Pretoriana digitale al servizio del quartiere.</p>
         ${watchlistHtml}
       </div>
     `,
