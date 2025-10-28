@@ -43,7 +43,7 @@ powershell -ExecutionPolicy Bypass -File scripts\praetorian-task-run.ps1
 or inside WSL:
 
 ```bash
-/mnt/c/Windows/System32/wsl.exe -d Ubuntu /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"
+/mnt/c/Windows/System32/wsl.exe -d Ubuntu-20.04 /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"
 ```
 
 For automatic daily execution, you can either:
@@ -56,8 +56,8 @@ For automatic daily execution, you can either:
     3.  Trigger: **Daily** at your preferred time.
     4.  Action: **Start a program** with:
         - Program/script: `C:\Windows\System32\wsl.exe`
-        - Arguments: `-d Ubuntu /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"`
-            - Adjust the distribution name (`Ubuntu`) and path if yours differ.
+        - Arguments: `-d Ubuntu-20.04 /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"`
+            - Replace `Ubuntu-20.04` with the name returned by `wsl -l -q` on your machine, if different.
     5.  Save the task. Windows will launch WSL, execute the wrapper, and append output to `praetorian.log`.
 
 ## 4. Running in Docker
