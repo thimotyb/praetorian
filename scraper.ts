@@ -159,7 +159,11 @@ async function scrapeForKeyword(page: Page, keyword: string): Promise<Publicatio
       if (button) {
         const relativeUrl = button.getAttribute('data-w3cbt-button-modale-url') || '';
         try {
-          link = new URL(relativeUrl, baseUrlString as string).toString();
+          const absoluteUrl = new URL(relativeUrl, baseUrlString as string);
+          if (!absoluteUrl.searchParams.has('DB_NAME')) {
+            absoluteUrl.searchParams.set('DB_NAME', 'l200130');
+          }
+          link = absoluteUrl.toString();
         } catch (error) {
           link = relativeUrl;
         }
