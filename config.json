@@ -8,7 +8,12 @@
     "Riqualificazione",
     "Assegnazione di Progetti",
     "Studi di Fattibilità",
-    "Asfaltatura"
+    "Asfaltatura",
+    "Incarico",
+    "Progetto",
+    "Studio",
+    "Fattibilità",
+    "Esecutivo"
   ],
   "emails": [
     "thimoty@thimoty.it",
