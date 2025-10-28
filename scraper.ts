@@ -105,24 +105,30 @@ async function scrapeForKeyword(page: Page, keyword: string): Promise<Publicatio
   console.log(`Searching for keyword: "${keyword}"`);
   await page.goto(SEARCH_PAGE_URL, { waitUntil: 'networkidle2' });
 
-  const testoSelector = 'input[name="testo_da_cercare"]';
+  await page.evaluate(() => {
+    const collapse = document.querySelector('#idCollapse1_2');
+    if (collapse && !collapse.classList.contains('show')) {
+      const button = document.querySelector<HTMLButtonElement>('button[data-bs-target="#idCollapse1_2"]');
+      button?.click();
+    }
+  });
+  await page.waitForTimeout(200);
+
   const oggettoSelector = 'input[name="Oggetto"]';
-  let activeSelector = testoSelector;
+  await page.waitForSelector(oggettoSelector);
 
-  if (!(await page.$(testoSelector))) {
-    activeSelector = oggettoSelector;
-  }
+  await page.select('select[name="OggettoType"]', '%like%');
 
-  await page.waitForSelector(activeSelector);
   await page.evaluate((selector: string) => {
     const input = document.querySelector<HTMLInputElement>(selector);
     if (input) {
       input.value = '';
     }
-  }, activeSelector);
-  await page.type(activeSelector, keyword);
+  }, oggettoSelector);
+
+  await page.type(oggettoSelector, keyword);
   await page.keyboard.press('Tab');
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
 
   await page.evaluate(() => {
     const archivio = document.querySelector<HTMLInputElement>('input[name="Archivio"]');
@@ -153,14 +159,31 @@ async function scrapeForKeyword(page: Page, keyword: string): Promise<Publicatio
     }
   });
 
-  await page.waitForFunction(() => {
-    const stepContainer = document.querySelector('#idStepper1_2');
-    if (!stepContainer) {
-      return false;
+  const tableStateHandle = await page.waitForFunction(() => {
+    const body = document.querySelector('#idTabella2 tbody');
+    if (!body) {
+      return null;
     }
-    const tableBody = stepContainer.querySelector('#idTabella2 tbody');
-    return !!tableBody && tableBody.childElementCount > 0;
-  }, { timeout: 60000 });
+    if (body.childElementCount > 0) {
+      return { hasRows: true };
+    }
+    const messageCell = body.querySelector('td');
+    if (messageCell && messageCell.textContent) {
+      return { hasRows: false, message: messageCell.textContent.trim() };
+    }
+    return null;
+  }, { timeout: 60000 }).catch(() => null);
+
+  if (!tableStateHandle) {
+    console.warn(`Timed out while waiting for results for keyword "${keyword}".`);
+    return [];
+  }
+
+  const tableState = await tableStateHandle.jsonValue() as { hasRows: boolean; message?: string };
+  if (!tableState.hasRows) {
+    console.log(`No publications found for keyword "${keyword}"${tableState.message ? ` (${tableState.message})` : ''}.`);
+    return [];
+  }
 
   const baseUrlForLinks = BASE_URL;
 
