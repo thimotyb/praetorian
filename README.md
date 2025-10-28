@@ -34,7 +34,19 @@ You can run the script manually with the following command:
 npm start
 ```
 
-For automatic daily execution, you should set up a cron job or a similar scheduler in your cloud environment (e.g., GitHub Actions, Vercel Cron Jobs, AWS Lambda Scheduled Events) to run this command once a day.
+For automatic daily execution, you can either:
+
+-   Run it in your cloud environment (e.g., GitHub Actions, Vercel Cron Jobs, AWS Lambda Scheduled Events).
+-   Or schedule it locally on Windows (WSL2) using Task Scheduler:
+
+    1.  Ensure the repository contains `run-praetorian.sh` (wrapper script). Make it executable: `chmod +x run-praetorian.sh`.
+    2.  Open **Task Scheduler** → *Create Basic Task* → name it (e.g., "Praetorian Daily").
+    3.  Trigger: **Daily** at your preferred time.
+    4.  Action: **Start a program** with:
+        - Program/script: `C:\Windows\System32\wsl.exe`
+        - Arguments: `-d Ubuntu /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"`
+            - Adjust the distribution name (`Ubuntu`) and path if yours differ.
+    5.  Save the task. Windows will launch WSL, execute the wrapper, and append output to `praetorian.log`.
 
 ## 4. Running in Docker
 
