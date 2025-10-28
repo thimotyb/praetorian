@@ -1,49 +1,49 @@
-# Praetorian · Guida per Agenti
+# Praetorian · Agent Handbook
 
-Questa guida riassume lo stato attuale del progetto e fornisce istruzioni rapide per continuare lo sviluppo con altri agenti o collaboratori.
+This guide summarises the current state of the project and gives quick instructions so another agent can pick up development seamlessly.
 
 ## Stack & Tooling
-- **Linguaggio**: TypeScript (Esm/CJS via ts-node)
-- **Librerie principali**:
-  - `puppeteer` (scraping dell'Albo Pretorio)
-  - `nodemailer` (invio email)
-  - `dotenv` (gestione variabili d'ambiente)
-- **Build/Test**: `npm run build` (tsc), `npm start` (ts-node)
-- **Docker**: `Dockerfile` pronto per la distribuzione headless con Chromium
+- **Language**: TypeScript (CommonJS via ts-node)
+- **Key libraries**:
+  - `puppeteer` for interacting with the Albo Pretorio portal
+  - `nodemailer` for outbound email
+  - `dotenv` for environment configuration
+- **Tasks**: `npm start` (ts-node runtime) · `npm run build` (tsc compilation)
+- **Container**: `Dockerfile` builds a headless Chromium image ready for deployment
 
-## File Chiave
-- `scraper.ts`: logica principale (scraping, deduplica, invio email, firma dinamica)
-- `config.json`: keywords e lista destinatari
-- `.env` (da creare): credenziali SMTP e variabili opzionali
-- `README.md`: istruzioni dettagliate per setup, Docker, SMTP, test mode
-- `env.example`: template delle variabili d'ambiente
+## Core Files
+- `scraper.ts` – end-to-end workflow: scrape → deduplicate → notify → persist state
+- `config.json` – keyword watchlist and primary recipient list
+- `.env` (local) – SMTP credentials and optional overrides
+- `env.example` – template for required variables
+- `README.md` – usage, SMTP setup, Docker instructions, testing tips
 
-## Stato Funzionale
-- Scraping funzionante con stepper dinamico: inserisce la keyword nel campo `Oggetto`, forza `Archivio = 'S'`, avanza al secondo step, legge la tabella dei risultati (`#idTabella2`).
-- Link email corretti: aggiunta automatica del parametro `DB_NAME=l200130`.
-- Firma email brandizzata: versione Praetorian (`PRAETORIAN_VERSION`), immagine pretoriana da Wikimedia e rotazione casuale di 25 motti latini (`SIGN_OFFS`).
-- Modalità test email: impostando `PRAETORIAN_TEST_RECIPIENT` si invia a un solo indirizzo (log dedicato).
+## Functional Snapshot
+- Dynamic stepper automation: fills the `Oggetto` field, forces `Archivio = 'S'`, advances to step 2, parses `#idTabella2` rows.
+- Email links automatically append `DB_NAME=l200130` so detail pages open correctly.
+- Branded footer: Praetorian version string, Wikimedia image, and 25 rotating Latin mottos (`SIGN_OFFS`).
+- Test-mode override: setting `PRAETORIAN_TEST_RECIPIENT` sends mail to a single address (logged accordingly).
 
-## Variabili d'Ambiente Principali
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` — obbligatorie per l'invio via Nodemailer
-- `PRAETORIAN_TEST_RECIPIENT` — opzionale: se valorizzata sovrascrive la lista destinatari
-- (Opzionale) `APP_PASSWORD` — per salvare la Google App Password in modo esplicito
+## Important Environment Variables
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` – required for Nodemailer
+- `PRAETORIAN_TEST_RECIPIENT` – optional single-recipient override for dry runs
+- `APP_PASSWORD` (optional) – convenient place to store the Gmail app password
 
-## Come Eseguire Test in Sicurezza
-1. Copia `env.example` in `.env` e riempi i valori SMTP.
-2. Per test non invasivi imposta `PRAETORIAN_TEST_RECIPIENT=tuoindirizzo@test`.
-3. Esegui `npm start` (invia email) oppure `npm run build` per validare la compilazione.
+## Safe Testing Workflow
+1. Copy `env.example` to `.env` and fill in SMTP values.
+2. Set `PRAETORIAN_TEST_RECIPIENT=you@example.com` while experimenting.
+3. Run `npm start` to trigger the full flow (email will respect the override) or `npm run build` for a quick compile check.
 
-## Note Operative
-- Il file `seen_publications.json` mantiene lo stato ed è ignorato da Git.
-- `config.json` è versionato: modifica con attenzione e committa quando cambi destinatari/keywords.
-- Il repository è già containerizzato; segui la sezione "Running in Docker" del README per deployment.
+## Operational Notes
+- `seen_publications.json` stores state, is Git-ignored, and can be reset to `[]` to force a fresh notification.
+- `config.json` is version-controlled; update keywords/recipients intentionally and commit changes.
+- Docker usage is documented in the README; mount `.env`, `config.json`, and `seen_publications.json` for persistence.
 
-## Checklist prima di lasciare il progetto ad un altro agente
-- [ ] `.env` aggiornato localmente (ma non committato)
-- [ ] `config.json` coerente con i destinatari richiesti
-- [ ] `seen_publications.json` opzionalmente resettato (`[]`) per forzare un nuovo invio
-- [ ] Test eseguiti (`npm run build` o `npm start` con `PRAETORIAN_TEST_RECIPIENT`)
-- [ ] `git status` pulito e push eseguito
+## Handoff Checklist for the Next Agent
+- [ ] `.env` updated locally (never committed)
+- [ ] `config.json` reflects the desired recipients/keywords
+- [ ] `seen_publications.json` reset if a clean run is needed
+- [ ] Tests executed (`npm run build` and/or `npm start` with `PRAETORIAN_TEST_RECIPIENT`)
+- [ ] `git status` clean and latest changes pushed
 
-Buon lavoro, Pretoriano digitale!
+Stay vigilant, digital Praetorian!
