@@ -19,4 +19,4 @@ if (( ${#logs[@]} > MAX_LOGS )); then
   done
 fi
 
-/usr/bin/npm start >> "$LOG_BASENAME" 2>&1
+npm start >> "$LOG_BASENAME" 2>&1
