@@ -277,10 +277,13 @@ async function sendNotification(newPublications: Publication[], config: Config):
 
   const signOff = SIGN_OFFS[Math.floor(Math.random() * SIGN_OFFS.length)];
   const watchlistHtml = config.keywords.length > 0
-    ? `<ul style="margin: 8px 0 16px; padding-left: 20px;">
-         ${config.keywords.map(kw => `<li>${kw}</li>`).join('')}
-       </ul>`
-    : '<p style="margin: 8px 0 16px;">(No keywords configured)</p>';
+    ? `<div style="margin-top: 12px; font-size: 12px; color: #666; text-align: center;">
+         <div style="font-weight: 600;">Sentinelle vigili sulle seguenti parole d'ordine:</div>
+         <ul style="margin: 4px auto 0; padding-left: 18px; display: inline-block; text-align: left;">
+           ${config.keywords.map(kw => `<li>${kw}</li>`).join('')}
+         </ul>
+       </div>`
+    : '<div style="margin-top: 12px; font-size: 12px; color: #666; text-align: center;">(No keywords configured)</div>';
 
   const mailOptions = {
     from: `"Praetorian" <${process.env.SMTP_USER}>`,
@@ -290,14 +293,13 @@ async function sendNotification(newPublications: Publication[], config: Config):
       <div style="font-family: sans-serif; color: #333;">
         <h2>Ave, sono Praetorian ${PRAETORIAN_VERSION}, e sorveglio la mia città.</h2>
         <p style="margin-top: 4px; color: #666; font-size: 14px;">Versione ${PRAETORIAN_VERSION} · Guardia Pretoriana digitale al servizio del quartiere.</p>
-        <p style="margin-top: 16px; font-weight: 600;">Sentinelle vigili sulle seguenti parole d'ordine:</p>
-        ${watchlistHtml}
         <p>Sono stati trovati ${newPublications.length} nuovi atti di potenziale interesse:</p>
         ${publicationsHtml}
         <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 12px; font-style: italic; color: #2c3e50;">
           <img src="${PRAETORIAN_IMAGE_DATA_URI}" alt="Stylised Praetorian guard" width="48" height="48" style="display: block; border-radius: 8px; box-shadow: 0 0 4px rgba(0,0,0,0.15);" />
           <span>${signOff}</span>
         </div>
+        ${watchlistHtml}
       </div>
     `,
   };
