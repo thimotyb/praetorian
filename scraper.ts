@@ -57,7 +57,7 @@ const SIGN_OFFS = [
 ];
 
 const PRAETORIAN_VERSION = 'v1.1.0';
-const PRAETORIAN_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Portrait_of_a_praetorian_in_the_Museo_Nazionale_Romano_alle_Terme_2014-12-05.jpg';
+const PRAETORIAN_IMAGE_DATA_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmMzZTUwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjE0IiByPSI4IiBmaWxsPSIjZjRmNGY0Ii8+CiAgICA8cGF0aCBkPSJNMjAgNTR2LTIwYzAtOCA2LTE0IDEyLTE0czEyIDYgMTIgMTR2MjAiIGZpbGw9IiNmNGY0ZjQiLz4KICAgIDxwYXRoIGQ9Ik0yNCAzMmgxNiIvPgogICAgPHBhdGggZD0iTTE0IDMwbDEwIDZ2MTRsLTEwLTR6IiBmaWxsPSIjZTllY2VmIi8+CiAgICA8cGF0aCBkPSJNNTAgMzBsLTEwIDZ2MTRsMTAtNHoiIGZpbGw9IiNlOWVjZWYiLz4KICAgIDxwYXRoIGQ9Ik0zMiAyMHY2Ii8+CiAgICA8cGF0aCBkPSJNMjggNDRoOCIvPgogIDwvZz4KICA8cGF0aCBkPSJNMzIgNTZjLTYgMC0xMiAyLTE2IDZoMzJjLTQtNC0xMC02LTE2LTZ6IiBmaWxsPSIjY2ZkOGRjIi8+Cjwvc3ZnPg==';
 
 // --- MAIN LOGIC ---
 
@@ -254,10 +254,10 @@ async function sendNotification(newPublications: Publication[], config: Config):
         <p style="margin-top: 4px; color: #666; font-size: 14px;">Versione ${PRAETORIAN_VERSION} · Guardia Pretoriana digitale al servizio del quartiere.</p>
         <p>Sono stati trovati ${newPublications.length} nuovi atti di potenziale interesse:</p>
         ${publicationsHtml}
-        <div style="margin-top: 25px; text-align: center;">
-          <img src="${PRAETORIAN_IMAGE_URL}" alt="Ritratto di un pretoriano romano" style="max-width: 220px; width: 100%; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.15);" />
+        <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 12px; font-style: italic; color: #2c3e50;">
+          <img src="${PRAETORIAN_IMAGE_DATA_URI}" alt="Stylised Praetorian guard" width="48" height="48" style="display: block; border-radius: 8px; box-shadow: 0 0 4px rgba(0,0,0,0.15);" />
+          <span>${signOff}</span>
         </div>
-        <p style="margin-top: 15px; font-style: italic; text-align: center;">${signOff}</p>
       </div>
     `,
   };
