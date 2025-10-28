@@ -276,6 +276,11 @@ async function sendNotification(newPublications: Publication[], config: Config):
   `).join('');
 
   const signOff = SIGN_OFFS[Math.floor(Math.random() * SIGN_OFFS.length)];
+  const watchlistHtml = config.keywords.length > 0
+    ? `<ul style="margin: 8px 0 16px; padding-left: 20px;">
+         ${config.keywords.map(kw => `<li>${kw}</li>`).join('')}
+       </ul>`
+    : '<p style="margin: 8px 0 16px;">(No keywords configured)</p>';
 
   const mailOptions = {
     from: `"Praetorian" <${process.env.SMTP_USER}>`,
@@ -285,6 +290,8 @@ async function sendNotification(newPublications: Publication[], config: Config):
       <div style="font-family: sans-serif; color: #333;">
         <h2>Ave, sono Praetorian ${PRAETORIAN_VERSION}, e sorveglio la mia città.</h2>
         <p style="margin-top: 4px; color: #666; font-size: 14px;">Versione ${PRAETORIAN_VERSION} · Guardia Pretoriana digitale al servizio del quartiere.</p>
+        <p style="margin-top: 16px; font-weight: 600;">Sentinelle vigili sulle seguenti parole d'ordine:</p>
+        ${watchlistHtml}
         <p>Sono stati trovati ${newPublications.length} nuovi atti di potenziale interesse:</p>
         ${publicationsHtml}
         <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 12px; font-style: italic; color: #2c3e50;">
