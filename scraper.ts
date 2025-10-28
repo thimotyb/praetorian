@@ -105,14 +105,24 @@ async function scrapeForKeyword(page: Page, keyword: string): Promise<Publicatio
   console.log(`Searching for keyword: "${keyword}"`);
   await page.goto(SEARCH_PAGE_URL, { waitUntil: 'networkidle2' });
 
-  await page.waitForSelector('input[name="Oggetto"]');
-  await page.evaluate(() => {
-    const input = document.querySelector<HTMLInputElement>('input[name="Oggetto"]');
+  const testoSelector = 'input[name="testo_da_cercare"]';
+  const oggettoSelector = 'input[name="Oggetto"]';
+  let activeSelector = testoSelector;
+
+  if (!(await page.$(testoSelector))) {
+    activeSelector = oggettoSelector;
+  }
+
+  await page.waitForSelector(activeSelector);
+  await page.evaluate((selector: string) => {
+    const input = document.querySelector<HTMLInputElement>(selector);
     if (input) {
       input.value = '';
     }
-  });
-  await page.type('input[name="Oggetto"]', keyword);
+  }, activeSelector);
+  await page.type(activeSelector, keyword);
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(200);
 
   await page.evaluate(() => {
     const archivio = document.querySelector<HTMLInputElement>('input[name="Archivio"]');
