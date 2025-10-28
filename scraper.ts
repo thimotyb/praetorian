@@ -277,11 +277,9 @@ async function sendNotification(newPublications: Publication[], config: Config):
 
   const signOff = SIGN_OFFS[Math.floor(Math.random() * SIGN_OFFS.length)];
   const watchlistHtml = config.keywords.length > 0
-    ? `<div style="margin-top: 12px; font-size: 12px; color: #666; text-align: center;">
-         <div style="font-weight: 600;">Sentinelle vigili sulle seguenti parole d'ordine:</div>
-         <ul style="margin: 4px auto 0; padding-left: 18px; display: inline-block; text-align: left;">
-           ${config.keywords.map(kw => `<li>${kw}</li>`).join('')}
-         </ul>
+    ? `<div style="margin-top: 12px; font-size: 11px; color: #666; text-align: center;">
+         <span style="font-weight: 600;">Sentinelle vigili sulle seguenti parole d'ordine:</span>
+         <span style="display: block; margin-top: 4px;">${config.keywords.join(', ')}</span>
        </div>`
     : '<div style="margin-top: 12px; font-size: 12px; color: #666; text-align: center;">(No keywords configured)</div>';
 
