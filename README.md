@@ -34,6 +34,18 @@ You can run the script manually with the following command:
 npm start
 ```
 
+If you prefer to exercise the wrapper that Task Scheduler uses (and generate the rotated log files), invoke:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\praetorian-task-run.ps1
+```
+
+or inside WSL:
+
+```bash
+/mnt/c/Windows/System32/wsl.exe -d Ubuntu /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"
+```
+
 For automatic daily execution, you can either:
 
 -   Run it in your cloud environment (e.g., GitHub Actions, Vercel Cron Jobs, AWS Lambda Scheduled Events).
