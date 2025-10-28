@@ -30,9 +30,11 @@ This guide summarises the current state of the project and gives quick instructi
 - `APP_PASSWORD` (optional) – convenient place to store the Gmail app password
 
 ## Safe Testing Workflow
-1. Copy `env.example` to `.env` and fill in SMTP values.
-2. Set `PRAETORIAN_TEST_RECIPIENT=you@example.com` while experimenting.
-3. Run `npm start` to trigger the full flow (email will respect the override) or `npm run build` for a quick compile check.
+1. Copy `env.example` to `.env` and fill in SMTP values if you have not already.
+2. **Set the test recipient**: add `PRAETORIAN_TEST_RECIPIENT=you@example.com` in `.env` (or prefix the command, e.g. `PRAETORIAN_TEST_RECIPIENT=you@example.com npm start`). This ensures only your inbox receives notifications during test runs.
+3. **Reset state if you want to re-send the latest acts**: run `echo "[]" > seen_publications.json` so the scraper treats all hits as new. This file is ignored by Git.
+4. Run `npm start` to execute the full workflow (scrape + email). Logs will note when test mode is active. For a quick static check without sending mail, run `npm run build` instead.
+5. After testing, remove or clear `PRAETORIAN_TEST_RECIPIENT` to restore normal multi-recipient delivery.
 
 ## Operational Notes
 - `seen_publications.json` stores state, is Git-ignored, and can be reset to `[]` to force a fresh notification.
