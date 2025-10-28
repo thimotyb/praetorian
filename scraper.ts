@@ -34,7 +34,30 @@ const SIGN_OFFS = [
   'Custos urbis numquam dormit.',
   'Ad honorem et gloriam Praetoriani.',
   'Praesidium civium fideliter.',
+  'Praetorianus in aeternum vigilat.',
+  'In umbra gladii libertas custoditur.',
+  'Custos urbis facibus noctis lucet.',
+  'Silentio defendit, clamque observat.',
+  'Fides ferrumque Praetorii sunt arma.',
+  'Pro civibus, contra tenebras.',
+  'Vita praesidii, honor imperii.',
+  'Non dormio dum populus quiescit.',
+  'Praetorianus pro muris et foris.',
+  'Lux matutina Praetoriano respondet.',
+  'Clangor tubae, paratus Praetorianus.',
+  'Contumax iniuria sub gladio cadit.',
+  'Pax servata, virtus declarata.',
+  'Aeterna tutela in corde Praetorii.',
+  'Miles urbanus, animus firmus.',
+  'Securitas populi, laus Praetorii.',
+  'Firmus adversus omnem tumultum.',
+  'Nihil timet, qui civitatem amat.',
+  'Praetorianus stat, hostis corruit.',
+  'Ardens custodia sine fine vigilat.',
 ];
+
+const PRAETORIAN_VERSION = 'v1.1.0';
+const PRAETORIAN_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Portrait_of_a_praetorian_in_the_Museo_Nazionale_Romano_alle_Terme_2014-12-05.jpg';
 
 // --- MAIN LOGIC ---
 
@@ -223,10 +246,14 @@ async function sendNotification(newPublications: Publication[], config: Config):
     subject: 'Praetorian: Nuovi atti pubblicati sull\'Albo Pretorio',
     html: `
       <div style="font-family: sans-serif; color: #333;">
-        <h2>Ave, sono Praetorian, e sorveglio la mia città.</h2>
+        <h2>Ave, sono Praetorian ${PRAETORIAN_VERSION}, e sorveglio la mia città.</h2>
+        <p style="margin-top: 4px; color: #666; font-size: 14px;">Versione ${PRAETORIAN_VERSION} · Guardia Pretoriana digitale al servizio del quartiere.</p>
         <p>Sono stati trovati ${newPublications.length} nuovi atti di potenziale interesse:</p>
         ${publicationsHtml}
-        <p style="margin-top: 20px; font-style: italic;">${signOff}</p>
+        <div style="margin-top: 25px; text-align: center;">
+          <img src="${PRAETORIAN_IMAGE_URL}" alt="Ritratto di un pretoriano romano" style="max-width: 220px; width: 100%; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.15);" />
+        </div>
+        <p style="margin-top: 15px; font-style: italic; text-align: center;">${signOff}</p>
       </div>
     `,
   };
