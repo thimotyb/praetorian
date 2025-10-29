@@ -19,6 +19,11 @@ MAX_LOGS=7
 
 cd "$REPO_DIR"
 
+export HOME="/home/$TARGET_USER"
+export XDG_CACHE_HOME="$HOME/.cache"
+export PUPPETEER_CACHE_DIR="$HOME/.cache/puppeteer"
+mkdir -p "$PUPPETEER_CACHE_DIR"
+
 if [[ -f $LOG_BASENAME ]]; then
   timestamp=$(date +%Y%m%d-%H%M%S)
   mv "$LOG_BASENAME" "$LOG_BASENAME.$timestamp"
