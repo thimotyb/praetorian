@@ -37,4 +37,5 @@ if (( ${#logs[@]} > MAX_LOGS )); then
   done
 fi
 
+printf '[%s] Praetorian run starting\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG_BASENAME"
 "$HOME/.nvm/versions/node/v20.17.0/bin/npm" start >> "$LOG_BASENAME" 2>&1
