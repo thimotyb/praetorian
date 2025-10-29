@@ -1,6 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
+TARGET_USER=thimoty
+if [[ "${PRAETORIAN_WRAPPER_REEXEC:-0}" != "1" && $(id -un) != "$TARGET_USER" ]]; then
+  if command -v runuser >/dev/null 2>&1; then
+    exec runuser -u "$TARGET_USER" -- env PRAETORIAN_WRAPPER_REEXEC=1 "$0" "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    exec sudo -u "$TARGET_USER" env PRAETORIAN_WRAPPER_REEXEC=1 "$0" "$@"
+  else
+    echo "Please run this script as user $TARGET_USER or install runuser/sudo." >&2
+    exit 1
+  fi
+fi
+
 REPO_DIR=/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian
 LOG_BASENAME=praetorian.log
 MAX_LOGS=7
