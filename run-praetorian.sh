@@ -23,6 +23,7 @@ export HOME="/home/$TARGET_USER"
 export XDG_CACHE_HOME="$HOME/.cache"
 export PUPPETEER_CACHE_DIR="$HOME/.cache/puppeteer"
 mkdir -p "$PUPPETEER_CACHE_DIR"
+export PATH="$HOME/.nvm/versions/node/v20.17.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 if [[ -f $LOG_BASENAME ]]; then
   timestamp=$(date +%Y%m%d-%H%M%S)
@@ -36,4 +37,4 @@ if (( ${#logs[@]} > MAX_LOGS )); then
   done
 fi
 
-npm start >> "$LOG_BASENAME" 2>&1
+"$HOME/.nvm/versions/node/v20.17.0/bin/npm" start >> "$LOG_BASENAME" 2>&1
