@@ -46,6 +46,8 @@ or inside WSL:
 /mnt/c/Windows/System32/wsl.exe -d Ubuntu-20.04 /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"
 ```
 
+The wrapper will automatically re-exec as the `thimoty` user if invoked as `root`, ensuring Puppeteer finds the cached Chrome bundle.
+
 For automatic daily execution, you can either:
 
 -   Run it in your cloud environment (e.g., GitHub Actions, Vercel Cron Jobs, AWS Lambda Scheduled Events).
