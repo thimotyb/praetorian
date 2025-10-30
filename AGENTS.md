@@ -23,6 +23,7 @@ This guide summarises the current state of the project and gives quick instructi
 - Email links automatically append `DB_NAME=l200130` so detail pages open correctly.
 - Branded footer: Praetorian version string, Wikimedia image, and 25 rotating Latin mottos (`SIGN_OFFS`).
 - Test-mode override: setting `PRAETORIAN_TEST_RECIPIENT` sends mail to a single address (logged accordingly).
+- The Windows wrapper (`run-praetorian.sh`) rotates logs, re-executes as user `thimoty`, forces Puppeteer to use `/home/thimoty/.cache/puppeteer`, ensures the NVM Node/NPM path is loaded, and writes a timestamped “run starting” line to the log before executing `npm start`.
 
 ## Important Environment Variables
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` – required for Nodemailer
@@ -35,11 +36,24 @@ This guide summarises the current state of the project and gives quick instructi
 3. **Reset state if you want to re-send the latest acts**: run `echo "[]" > seen_publications.json` so the scraper treats all hits as new. This file is ignored by Git.
 4. Run `npm start` to execute the full workflow (scrape + email). Logs will note when test mode is active. For a quick static check without sending mail, run `npm run build` instead.
 5. After testing, remove or clear `PRAETORIAN_TEST_RECIPIENT` to restore normal multi-recipient delivery.
+6. To exercise the wrapper (log rotation, re-exec, PATH and cache tweaks) manually:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\praetorian-task-run.ps1
+   ```
+   or
+   ```bash
+   wsl -d Ubuntu-20.04 /bin/bash -c "/mnt/c/Users/thimo/Dropbox/alberi_don_sturzo/Praetorian/run-praetorian.sh"
+   ```
 
 ## Operational Notes
 - `seen_publications.json` stores state, is Git-ignored, and can be reset to `[]` to force a fresh notification.
 - `config.json` is version-controlled; update keywords/recipients intentionally and commit changes.
 - Docker usage is documented in the README; mount `.env`, `config.json`, and `seen_publications.json` for persistence.
+- PowerShell helpers under `scripts/`:
+  - `praetorian-task-status.ps1` (verify registration)
+  - `praetorian-task-run.ps1` (trigger run manually)
+  - `praetorian-task-history.ps1` (read event log history)
+- README Scheduling section now references `Ubuntu-20.04`; adjust to whatever `wsl -l -q` prints if different.
 
 ## Handoff Checklist for the Next Agent
 - [ ] `.env` updated locally (never committed)
