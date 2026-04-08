@@ -23,6 +23,7 @@ npm install
     - Generate the 16-character password and paste it into `SMTP_PASS` (and optionally `APP_PASSWORD`).
 
     During tests you can set `PRAETORIAN_TEST_RECIPIENT` in `.env` to route notifications to a single inbox (e.g. `thimoty@thimoty.it`).
+    On ARM servers, set `PRAETORIAN_BROWSER_EXECUTABLE_PATH=/snap/bin/chromium`.
 
 2.  **Keywords & Emails**: The `config.json` file contains the keywords to search for and the email recipients. You can edit this file directly if needed.
 
@@ -47,6 +48,73 @@ or inside WSL:
 ```
 
 The wrapper will automatically re-exec as the `thimoty` user if invoked as `root`, ensuring Puppeteer finds the cached Chrome bundle.
+
+## 3.b Deploy on Eirini Server (using `../itech` access config)
+
+This repository includes deploy helpers to publish Praetorian on the same OCI VM used by Eirini, reusing:
+
+- `../itech/keys/eirini-server.ip`
+- `../itech/keys/eirini-private-ssh-key-2026-02-20.key`
+
+Scripts added:
+
+- `scripts/connect-eirini.sh` -> SSH connection to server.
+- `scripts/deploy-praetorian-eirini.sh` -> upload/update app release + systemd timer setup.
+- `scripts/configure_praetorian_remote.sh` -> remote helper executed by deploy script.
+- `scripts/sync-seen-publications-eirini.sh` -> manual upload/download of `seen_publications.json`.
+
+### First deploy (with state migration)
+
+1. Ensure local state file is up to date:
+   ```bash
+   ls -l seen_publications.json
+   ```
+2. Run initial deploy and force state upload:
+   ```bash
+   SEEN_STATE_MODE=force-upload ENV_MODE=force-upload bash scripts/deploy-praetorian-eirini.sh
+   ```
+3. On server, edit SMTP settings:
+   ```bash
+   bash scripts/connect-eirini.sh
+   sudo nano /opt/praetorian/shared/.env
+   ```
+4. Optional immediate test run:
+   ```bash
+   bash scripts/connect-eirini.sh "sudo systemctl start praetorian.service && sudo journalctl -u praetorian.service -n 120 --no-pager"
+   ```
+
+### Deploy updates (normal flow)
+
+For subsequent releases, keep remote state by default:
+
+```bash
+bash scripts/deploy-praetorian-eirini.sh
+```
+
+Useful overrides:
+
+- `SEEN_STATE_MODE=keep-remote` (explicitly never upload local state)
+- `SEEN_STATE_MODE=if-missing` (default; upload only if remote state is missing/empty)
+- `SEEN_STATE_MODE=force-upload` (overwrite remote state with local file)
+- `ENV_MODE=keep-remote` (default; keep remote `.env`)
+- `ENV_MODE=force-upload` (overwrite remote `.env` with local `.env`)
+- `RUN_AFTER_DEPLOY=true` (start one run immediately after deployment)
+- `TIMER_ON_CALENDAR='*-*-* 06:30:00'` (change daily schedule)
+- `INSTALL_CHROMIUM_DEPS=true` (install Chromium OS packages on remote host)
+
+### Manual state sync
+
+Upload local state to server:
+
+```bash
+bash scripts/sync-seen-publications-eirini.sh upload
+```
+
+Download server state to local repository:
+
+```bash
+bash scripts/sync-seen-publications-eirini.sh download
+```
 
 For automatic daily execution, you can either:
 

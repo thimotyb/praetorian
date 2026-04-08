@@ -1,6 +1,6 @@
 
 import puppeteer, { Browser, Page } from 'puppeteer';
-import { promises as fs } from 'fs';
+import { existsSync, promises as fs } from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
@@ -20,6 +20,13 @@ interface Publication {
 interface Config {
   keywords: string[];
   emails: string[];
+}
+
+class PortalUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PortalUnavailableError';
+  }
 }
 
 // --- CONSTANTS ---
@@ -98,26 +105,106 @@ async function saveSeenPublications(seenPubs: Set<string>): Promise<void> {
   await fs.writeFile(SEEN_PUBS_PATH, JSON.stringify(Array.from(seenPubs)), 'utf-8');
 }
 
+const OGGETTO_CANDIDATE_SELECTORS = [
+  'input[name="Oggetto"]',
+  'input[id="Oggetto"]',
+  'input[id*="Oggetto"]',
+  'input[name*="Oggetto"]',
+];
+
+async function findFirstSelector(page: Page, selectors: string[], timeoutMs: number): Promise<string | null> {
+  const maxTries = Math.max(1, Math.ceil(timeoutMs / 500));
+  for (let i = 0; i < maxTries; i += 1) {
+    const matchedSelector = await page.evaluate((selectorList: string[]) => {
+      for (const selector of selectorList) {
+        if (document.querySelector(selector)) {
+          return selector;
+        }
+      }
+      return null;
+    }, selectors);
+
+    if (matchedSelector) {
+      return matchedSelector;
+    }
+    await page.waitForTimeout(500);
+  }
+
+  return null;
+}
+
+async function detectPortalUnavailability(page: Page): Promise<string | null> {
+  const pageState = await page.evaluate(() => {
+    const title = (document.title || '').trim();
+    const bodyText = (document.body?.innerText || '').trim().toLowerCase();
+    return { title, bodyText };
+  });
+
+  const isUnavailable = pageState.title.toLowerCase().includes('servizio non disponibile')
+    || pageState.bodyText.includes('servizio temporaneamente non disponibile')
+    || pageState.bodyText.includes('manutenzione programmata');
+
+  if (!isUnavailable) {
+    return null;
+  }
+
+  return pageState.title || 'Servizio temporaneamente non disponibile';
+}
+
+async function openSearchForm(page: Page, keyword: string): Promise<string | null> {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await page.goto(SEARCH_PAGE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+      const unavailableMessage = await detectPortalUnavailability(page);
+      if (unavailableMessage) {
+        throw new PortalUnavailableError(unavailableMessage);
+      }
+
+      await page.evaluate(() => {
+        const collapse = document.querySelector('#idCollapse1_2');
+        if (collapse && !collapse.classList.contains('show')) {
+          const button = document.querySelector<HTMLButtonElement>('button[data-bs-target="#idCollapse1_2"]');
+          button?.click();
+        }
+      });
+
+      await page.waitForTimeout(300);
+      const oggettoSelector = await findFirstSelector(page, OGGETTO_CANDIDATE_SELECTORS, 45000);
+      if (oggettoSelector) {
+        return oggettoSelector;
+      }
+    } catch (error) {
+      if (error instanceof PortalUnavailableError) {
+        throw error;
+      }
+      console.warn(`Attempt ${attempt}/${maxAttempts} failed while opening search form for "${keyword}":`, error);
+    }
+
+    if (attempt < maxAttempts) {
+      await page.waitForTimeout(1200);
+    }
+  }
+
+  return null;
+}
+
 /**
  * Scrapes publications for a given keyword.
  */
 async function scrapeForKeyword(page: Page, keyword: string): Promise<Publication[]> {
   console.log(`Searching for keyword: "${keyword}"`);
-  await page.goto(SEARCH_PAGE_URL, { waitUntil: 'networkidle2' });
+  const oggettoSelector = await openSearchForm(page, keyword);
+  if (!oggettoSelector) {
+    console.warn(`Search form not available for keyword "${keyword}". Skipping.`);
+    return [];
+  }
 
-  await page.evaluate(() => {
-    const collapse = document.querySelector('#idCollapse1_2');
-    if (collapse && !collapse.classList.contains('show')) {
-      const button = document.querySelector<HTMLButtonElement>('button[data-bs-target="#idCollapse1_2"]');
-      button?.click();
-    }
-  });
-  await page.waitForTimeout(200);
-
-  const oggettoSelector = 'input[name="Oggetto"]';
-  await page.waitForSelector(oggettoSelector);
-
-  await page.select('select[name="OggettoType"]', '%like%');
+  const oggettoTypeSelect = await page.$('select[name="OggettoType"]');
+  if (oggettoTypeSelect) {
+    await page.select('select[name="OggettoType"]', '%like%');
+  }
 
   await page.evaluate((selector: string) => {
     const input = document.querySelector<HTMLInputElement>(selector);
@@ -320,18 +407,44 @@ async function main() {
   const config = await loadConfig();
   const seenPubs = await loadSeenPublications();
   const allFoundPublications: Publication[] = [];
+
+  const browserExecutablePath = (() => {
+    const envPath = (process.env.PRAETORIAN_BROWSER_EXECUTABLE_PATH || '').trim();
+    if (envPath) {
+      return envPath;
+    }
+
+    // ARM Linux servers often use the snap Chromium binary.
+    if (process.platform === 'linux' && process.arch === 'arm64' && existsSync('/snap/bin/chromium')) {
+      return '/snap/bin/chromium';
+    }
+
+    return undefined;
+  })();
+  if (browserExecutablePath) {
+    console.log(`Using browser executable: ${browserExecutablePath}`);
+  }
   
   let browser: Browser | null = null;
   try {
     browser = await puppeteer.launch({
       headless: 'new',
+      executablePath: browserExecutablePath,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
 
     for (const keyword of config.keywords) {
-      const publications = await scrapeForKeyword(page, keyword);
-      allFoundPublications.push(...publications);
+      try {
+        const publications = await scrapeForKeyword(page, keyword);
+        allFoundPublications.push(...publications);
+      } catch (error) {
+        if (error instanceof PortalUnavailableError) {
+          console.warn(`Portal unavailable while processing "${keyword}": ${error.message}. Stopping this run.`);
+          break;
+        }
+        console.error(`Error while scraping keyword "${keyword}":`, error);
+      }
       await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
     }
   } catch (error) {

@@ -1,6 +1,21 @@
 node_modules/
 .env
+.env.*
+*.env
+*.env.*
 seen_publications.json
 *.log
 .DS_Store
 dist/
+
+# Prevent accidental commits of keys/secrets used during deploy operations
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+private-*
+keys/
