@@ -29,6 +29,13 @@ class PortalUnavailableError extends Error {
   }
 }
 
+class KeywordResultsTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'KeywordResultsTimeoutError';
+  }
+}
+
 // --- CONSTANTS ---
 const BASE_URL = 'https://cloud.urbi.it/urbi/progs/urp/';
 const SEARCH_PAGE_URL = `${BASE_URL}ur1ME002.sto?DB_NAME=l200130&w3c=1`;
@@ -190,143 +197,154 @@ async function openSearchForm(page: Page, keyword: string): Promise<string | nul
   return null;
 }
 
+const KEYWORD_RESULTS_TIMEOUT_MS = parseInt(process.env.PRAETORIAN_KEYWORD_TIMEOUT_MS || '60000', 10);
+const KEYWORD_MAX_ATTEMPTS = Math.max(1, parseInt(process.env.PRAETORIAN_KEYWORD_MAX_ATTEMPTS || '3', 10));
+
 /**
  * Scrapes publications for a given keyword.
  */
 async function scrapeForKeyword(page: Page, keyword: string): Promise<Publication[]> {
-  console.log(`Searching for keyword: "${keyword}"`);
-  const oggettoSelector = await openSearchForm(page, keyword);
-  if (!oggettoSelector) {
-    console.warn(`Search form not available for keyword "${keyword}". Skipping.`);
-    return [];
-  }
-
-  const oggettoTypeSelect = await page.$('select[name="OggettoType"]');
-  if (oggettoTypeSelect) {
-    await page.select('select[name="OggettoType"]', '%like%');
-  }
-
-  await page.evaluate((selector: string) => {
-    const input = document.querySelector<HTMLInputElement>(selector);
-    if (input) {
-      input.value = '';
-    }
-  }, oggettoSelector);
-
-  await page.type(oggettoSelector, keyword);
-  await page.keyboard.press('Tab');
-  await page.waitForTimeout(250);
-
-  await page.evaluate(() => {
-    const archivio = document.querySelector<HTMLInputElement>('input[name="Archivio"]');
-    if (archivio) {
-      archivio.value = 'S';
+  for (let attempt = 1; attempt <= KEYWORD_MAX_ATTEMPTS; attempt += 1) {
+    console.log(`Searching for keyword: "${keyword}"${KEYWORD_MAX_ATTEMPTS > 1 ? ` (attempt ${attempt}/${KEYWORD_MAX_ATTEMPTS})` : ''}`);
+    const oggettoSelector = await openSearchForm(page, keyword);
+    if (!oggettoSelector) {
+      console.warn(`Search form not available for keyword "${keyword}". Skipping.`);
+      return [];
     }
 
-    type WindowWithLibs = typeof window & {
-      ctx?: { doStep: (stepper: unknown, action: string) => void };
-      $?: (selector: string) => unknown;
-    };
+    const oggettoTypeSelect = await page.$('select[name="OggettoType"]');
+    if (oggettoTypeSelect) {
+      await page.select('select[name="OggettoType"]', '%like%');
+    }
 
-    const win = window as WindowWithLibs;
-    const ctxObj = win.ctx;
-    const jqueryFn = typeof win.$ === 'function' ? win.$ : null;
-    const stepper = jqueryFn ? jqueryFn('#idStepper1') : null;
-
-    if (ctxObj && stepper) {
-      ctxObj.doStep(stepper, 'avanti');
-    } else {
-      const form = document.forms.namedItem('Form0');
-      if (form) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('StwEvent', '910001');
-        form.setAttribute('action', url.toString());
-        form.submit();
+    await page.evaluate((selector: string) => {
+      const input = document.querySelector<HTMLInputElement>(selector);
+      if (input) {
+        input.value = '';
       }
-    }
-  });
+    }, oggettoSelector);
 
-  const tableStateHandle = await page.waitForFunction(() => {
-    const body = document.querySelector('#idTabella2 tbody');
-    if (!body) {
-      return null;
-    }
-    if (body.childElementCount > 0) {
-      return { hasRows: true };
-    }
-    const messageCell = body.querySelector('td');
-    if (messageCell && messageCell.textContent) {
-      return { hasRows: false, message: messageCell.textContent.trim() };
-    }
-    return null;
-  }, { timeout: 60000 }).catch(() => null);
+    await page.type(oggettoSelector, keyword);
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(250);
 
-  if (!tableStateHandle) {
-    console.warn(`Timed out while waiting for results for keyword "${keyword}".`);
-    return [];
-  }
-
-  const tableState = await tableStateHandle.jsonValue() as { hasRows: boolean; message?: string };
-  if (!tableState.hasRows) {
-    console.log(`No publications found for keyword "${keyword}"${tableState.message ? ` (${tableState.message})` : ''}.`);
-    return [];
-  }
-
-  const baseUrlForLinks = BASE_URL;
-
-  const publications = await page.$$eval('#idTabella2 tbody tr', (rows, kw, baseUrlString) => {
-    return rows.map(row => {
-      const tr = row as HTMLTableRowElement;
-      const cells = tr.querySelectorAll('td');
-      if (cells.length < 2) {
-        return null;
+    await page.evaluate(() => {
+      const archivio = document.querySelector<HTMLInputElement>('input[name="Archivio"]');
+      if (archivio) {
+        archivio.value = 'S';
       }
 
-      const infoCell = cells[1];
-      const strongElements = Array.from(infoCell.querySelectorAll('strong'));
-      const type = strongElements[1]?.textContent?.trim() || '';
-      const subject = strongElements[2]?.textContent?.trim()
-        || strongElements[1]?.textContent?.trim()
-        || infoCell.textContent?.trim()
-        || '';
+      type WindowWithLibs = typeof window & {
+        ctx?: { doStep: (stepper: unknown, action: string) => void };
+        $?: (selector: string) => unknown;
+      };
 
-      const textContent = infoCell.textContent || '';
-      const lines = textContent.split('\n').map(line => line.trim()).filter(Boolean);
-      const publicationLine = lines.find(line => line.toLowerCase().startsWith('in pubblicazione dal')) || '';
+      const win = window as WindowWithLibs;
+      const ctxObj = win.ctx;
+      const jqueryFn = typeof win.$ === 'function' ? win.$ : null;
+      const stepper = jqueryFn ? jqueryFn('#idStepper1') : null;
 
-      const dateMatch = publicationLine.match(/in pubblicazione dal\s*([\d-]+)/i);
-      const regMatch = publicationLine.match(/\(reg\.\s*([^\)]+)\)/i);
-
-      const button = tr.querySelector<HTMLButtonElement>('button[data-w3cbt-button-modale-url]');
-      let link = '';
-      if (button) {
-        const relativeUrl = button.getAttribute('data-w3cbt-button-modale-url') || '';
-        try {
-          const absoluteUrl = new URL(relativeUrl, baseUrlString as string);
-          if (!absoluteUrl.searchParams.has('DB_NAME')) {
-            absoluteUrl.searchParams.set('DB_NAME', 'l200130');
-          }
-          link = absoluteUrl.toString();
-        } catch (error) {
-          link = relativeUrl;
+      if (ctxObj && stepper) {
+        ctxObj.doStep(stepper, 'avanti');
+      } else {
+        const form = document.forms.namedItem('Form0');
+        if (form) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('StwEvent', '910001');
+          form.setAttribute('action', url.toString());
+          form.submit();
         }
       }
+    });
 
-      if (!regMatch || !regMatch[1]) {
+    const tableStateHandle = await page.waitForFunction(() => {
+      const body = document.querySelector('#idTabella2 tbody');
+      if (!body) {
         return null;
       }
+      if (body.childElementCount > 0) {
+        return { hasRows: true };
+      }
+      const messageCell = body.querySelector('td');
+      if (messageCell && messageCell.textContent) {
+        return { hasRows: false, message: messageCell.textContent.trim() };
+      }
+      return null;
+    }, { timeout: KEYWORD_RESULTS_TIMEOUT_MS }).catch(() => null);
 
-      return {
-        reg: regMatch[1].trim(),
-        type: type || 'N/A',
-        subject: subject || 'Oggetto non trovato',
-        publicationDate: dateMatch ? dateMatch[1].trim() : 'N/A',
-        link,
-        keyword: kw,
-      };
-    }).filter((item): item is Publication => Boolean(item));
-  }, keyword, baseUrlForLinks);
-  return publications;
+    if (!tableStateHandle) {
+      if (attempt < KEYWORD_MAX_ATTEMPTS) {
+        console.warn(`Timed out while waiting for results for keyword "${keyword}". Retrying...`);
+        await page.waitForTimeout(1000 * attempt);
+        continue;
+      }
+      throw new KeywordResultsTimeoutError(`Timed out while waiting for results for keyword "${keyword}" after ${KEYWORD_MAX_ATTEMPTS} attempts.`);
+    }
+
+    const tableState = await tableStateHandle.jsonValue() as { hasRows: boolean; message?: string };
+    if (!tableState.hasRows) {
+      console.log(`No publications found for keyword "${keyword}"${tableState.message ? ` (${tableState.message})` : ''}.`);
+      return [];
+    }
+
+    const baseUrlForLinks = BASE_URL;
+
+    const publications = await page.$$eval('#idTabella2 tbody tr', (rows, kw, baseUrlString) => {
+      return rows.map(row => {
+        const tr = row as HTMLTableRowElement;
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 2) {
+          return null;
+        }
+
+        const infoCell = cells[1];
+        const strongElements = Array.from(infoCell.querySelectorAll('strong'));
+        const type = strongElements[1]?.textContent?.trim() || '';
+        const subject = strongElements[2]?.textContent?.trim()
+          || strongElements[1]?.textContent?.trim()
+          || infoCell.textContent?.trim()
+          || '';
+
+        const textContent = infoCell.textContent || '';
+        const lines = textContent.split('\n').map(line => line.trim()).filter(Boolean);
+        const publicationLine = lines.find(line => line.toLowerCase().startsWith('in pubblicazione dal')) || '';
+
+        const dateMatch = publicationLine.match(/in pubblicazione dal\s*([\d-]+)/i);
+        const regMatch = publicationLine.match(/\(reg\.\s*([^\)]+)\)/i);
+
+        const button = tr.querySelector<HTMLButtonElement>('button[data-w3cbt-button-modale-url]');
+        let link = '';
+        if (button) {
+          const relativeUrl = button.getAttribute('data-w3cbt-button-modale-url') || '';
+          try {
+            const absoluteUrl = new URL(relativeUrl, baseUrlString as string);
+            if (!absoluteUrl.searchParams.has('DB_NAME')) {
+              absoluteUrl.searchParams.set('DB_NAME', 'l200130');
+            }
+            link = absoluteUrl.toString();
+          } catch (error) {
+            link = relativeUrl;
+          }
+        }
+
+        if (!regMatch || !regMatch[1]) {
+          return null;
+        }
+
+        return {
+          reg: regMatch[1].trim(),
+          type: type || 'N/A',
+          subject: subject || 'Oggetto non trovato',
+          publicationDate: dateMatch ? dateMatch[1].trim() : 'N/A',
+          link,
+          keyword: kw,
+        };
+      }).filter((item): item is Publication => Boolean(item));
+    }, keyword, baseUrlForLinks);
+    return publications;
+  }
+
+  throw new KeywordResultsTimeoutError(`Unable to retrieve results for keyword "${keyword}".`);
 }
 
 /**
@@ -414,9 +432,9 @@ async function main() {
       return envPath;
     }
 
-    // ARM Linux servers often use the snap Chromium binary.
-    if (process.platform === 'linux' && process.arch === 'arm64' && existsSync('/snap/bin/chromium')) {
-      return '/snap/bin/chromium';
+    const bundledPath = puppeteer.executablePath();
+    if (bundledPath && existsSync(bundledPath)) {
+      return bundledPath;
     }
 
     return undefined;
@@ -449,6 +467,7 @@ async function main() {
     }
   } catch (error) {
     console.error('An error occurred during scraping:', error);
+    throw error;
   } finally {
     if (browser) {
       await browser.close();
@@ -484,10 +503,14 @@ async function main() {
       console.log('Updated seen publications state.');
     } catch (error) {
       console.error('Failed to send notification or save state:', error);
+      throw error;
     }
   }
 
   console.log('Praetorian going back to sleep.');
 }
 
-main().catch(console.error);
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

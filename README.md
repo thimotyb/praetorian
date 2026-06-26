@@ -23,7 +23,8 @@ npm install
     - Generate the 16-character password and paste it into `SMTP_PASS` (and optionally `APP_PASSWORD`).
 
     During tests you can set `PRAETORIAN_TEST_RECIPIENT` in `.env` to route notifications to a single inbox (e.g. `thimoty@thimoty.it`).
-    On ARM servers, set `PRAETORIAN_BROWSER_EXECUTABLE_PATH=/snap/bin/chromium`.
+    On ARM servers running under systemd, avoid snap Chromium and set `PRAETORIAN_BROWSER_EXECUTABLE_PATH` to a native Chromium wrapper.
+    You can tune per-keyword retries with `PRAETORIAN_KEYWORD_TIMEOUT_MS` and `PRAETORIAN_KEYWORD_MAX_ATTEMPTS`.
 
 2.  **Keywords & Emails**: The `config.json` file contains the keywords to search for and the email recipients. You can edit this file directly if needed.
 
